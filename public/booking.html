@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Book a lodge</title></head>
+<body>
+  <form id="booking">
+    <label>Lodge <select name="lodge"><option>Heron</option><option>Otter</option></select></label>
+    <label>Name <input name="guest" required></label>
+    <label>Nights <input name="nights" type="number" min="1" value="2"></label>
+    <button type="button" id="book-now">Book now</button>
+  </form>
+  <p id="status" hidden>Booking…</p>
+  <script type="module" src="/booking.js"></script>
+</body>
+</html>
