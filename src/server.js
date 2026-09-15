@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { weeklyBookings } from './reports/weekly-bookings.js';
+import { paymentsCsv } from './reports/payments-export.js';
 import { createBooking } from './bookings.js';
 
 const routes = {
@@ -8,6 +9,7 @@ const routes = {
   'GET /booking.js': () => file('booking.js', 'text/javascript'),
   'POST /api/bookings': (body) => json(201, createBooking(JSON.parse(body))),
   'GET /reports/weekly-bookings': () => json(200, weeklyBookings()),
+  'GET /reports/payments.csv': () => ({ status: 200, type: 'text/csv', body: paymentsCsv() }),
 };
 
 const page = (name) => file(name, 'text/html');
