@@ -1,0 +1,49 @@
+# Copied to .github/workflows/triage.yml in m2de/agentcore-bot-sandbox. This file is the
+# source of truth; see agents/issuetriage/README.md.
+#
+# Asks the triage agent to size a newly opened issue. The workflow holds no secrets: it
+# proves where it runs with GitHub's own signed token (OIDC), and the agent checks that
+# token before doing anything. The agent then acts on the issue as its own bot.
+name: Triage new issues
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Issue number to triage
+        required: true
+
+# id-token: write lets the job ask GitHub for a signed token. Nothing else is granted:
+# the agent, not this workflow, writes to the issue.
+permissions:
+  id-token: write
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ask the agent to triage
+        env:
+          AGENT_URL: ${{ vars.ISSUETRIAGE_URL }}
+          ISSUE: ${{ github.event.issue.number || inputs.issue }}
+          REPO: ${{ github.repository }}
+          # AgentCore wants a session ID of at least 33 characters.
+          SESSION_ID: issuetriage-${{ github.run_id }}-${{ github.run_attempt }}-github-actions
+        run: |
+          set -euo pipefail
+          if [ -z "$AGENT_URL" ]; then echo "Repo variable ISSUETRIAGE_URL is not set"; exit 1; fi
+          # The audience names the agent, so this token is no use anywhere else.
+          token=$(curl -sSf -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=agentcore-issuetriage" | jq -r .value)
+          echo "::add-mask::$token"
+          body=$(jq -nc --arg repo "$REPO" --argjson n "$ISSUE" '{repo: $repo, issueNumber: $n}')
+          curl -sS --fail-with-body -X POST "$AGENT_URL" \
+            -H "Authorization: Bearer $token" \
+            -H "Content-Type: application/json" \
+            -H "X-Amzn-Bedrock-AgentCore-Runtime-Session-Id: $SESSION_ID" \
+            --data "$body" | tee result.json
+          echo
+          jq -e '.ok' result.json > /dev/null
