@@ -22,6 +22,11 @@ permissions:
 
 jobs:
   triage:
+    # Only for m2de (user ID 17720020): on `issues` the actor is whoever opened the issue.
+    # This only saves a pointless run. The agent's token check (actor_id in
+    # authorizer.json) and the agent itself (the issue's author) enforce it, so editing
+    # this line doesn't get anyone else's issue triaged.
+    if: github.actor_id == '17720020'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
